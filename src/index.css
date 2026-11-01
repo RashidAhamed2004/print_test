@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-navy-900 text-white font-sans;
+    min-height: 100vh;
+    overscroll-behavior: none;
+  }
+
+  :root {
+    --color-green: #00d084;
+    --color-navy: #0a0f1e;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-tms-green text-navy-900 font-bold px-6 py-4 rounded-xl 
+           text-base transition-all duration-200 
+           hover:bg-tms-green-light active:scale-95 
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           shadow-glow-green touch-none select-none;
+    min-height: 56px;
+  }
+
+  .btn-secondary {
+    @apply bg-navy-700 text-white font-semibold px-6 py-4 rounded-xl 
+           text-base border border-navy-600 transition-all duration-200
+           hover:bg-navy-600 active:scale-95
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           touch-none select-none;
+    min-height: 56px;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white font-semibold px-6 py-4 rounded-xl 
+           text-base transition-all duration-200
+           hover:bg-red-500 active:scale-95
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           touch-none select-none;
+    min-height: 56px;
+  }
+
+  .btn-outline {
+    @apply border-2 border-tms-green text-tms-green font-semibold px-6 py-4 rounded-xl 
+           text-base transition-all duration-200
+           hover:bg-tms-green hover:text-navy-900 active:scale-95
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100
+           touch-none select-none;
+    min-height: 56px;
+  }
+
+  .card {
+    @apply bg-navy-800 rounded-2xl p-5 shadow-card border border-navy-600;
+  }
+
+  .input-field {
+    @apply w-full bg-navy-900 border border-navy-600 rounded-xl px-4 py-3 
+           text-white placeholder-gray-500 font-mono text-sm
+           focus:outline-none focus:border-tms-green focus:ring-1 focus:ring-tms-green
+           transition-all duration-200;
+    min-height: 48px;
+  }
+
+  .label {
+    @apply text-gray-400 text-sm font-medium mb-1 block;
+  }
+
+  .status-dot {
+    @apply w-3 h-3 rounded-full inline-block;
+  }
+
+  .status-connected {
+    @apply bg-tms-green shadow-glow-green animate-pulse-slow;
+  }
+
+  .status-disconnected {
+    @apply bg-red-500;
+  }
+
+  .status-connecting {
+    @apply bg-yellow-400 animate-pulse;
+  }
+
+  .log-entry {
+    @apply text-xs font-mono py-1 border-b border-navy-700 last:border-0;
+  }
+
+  .log-info { @apply text-blue-400; }
+  .log-success { @apply text-tms-green; }
+  .log-warning { @apply text-yellow-400; }
+  .log-error { @apply text-red-400; }
+}
+
+/* Receipt preview thermal paper style */
+.receipt-paper {
+  background: #fff9f0;
+  font-family: 'Courier New', Courier, monospace;
+  color: #1a1a1a;
+  font-size: 12px;
+  line-height: 1.4;
+  border-radius: 4px;
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+.receipt-paper::before {
+  content: '';
+  display: block;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    #fff9f0 0px, #fff9f0 8px,
+    #f0e8d8 8px, #f0e8d8 16px
+  );
+  border-radius: 4px 4px 0 0;
+}
+
+.receipt-paper::after {
+  content: '';
+  display: block;
+  height: 12px;
+  background: repeating-linear-gradient(
+    90deg,
+    #fff9f0 0px, #fff9f0 8px,
+    #f0e8d8 8px, #f0e8d8 16px
+  );
+  border-radius: 0 0 4px 4px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1530;
+}
+::-webkit-scrollbar-thumb {
+  background: #162350;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00d084;
+}
+
+/* Tab indicator animation */
+.tab-indicator {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Spinner */
+.spinner {
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: #00d084;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Print styles for Normal / Browser printing */
+@media screen {
+  .print-only-container {
+    display: none !important;
+  }
+}
+
+@media print {
+  /* Reset page background and text color */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive app UI elements */
+  header,
+  nav,
+  main,
+  footer,
+  .no-print,
+  .safe-bottom,
+  .card,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-danger {
+    display: none !important;
+  }
+
+  /* Display only dedicated printable container */
+  .print-only-container {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 10px 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .print-receipt-paper {
+    margin: 0 auto !important;
+    padding: 12px 6px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .print-receipt-text {
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+    color: #000000 !important;
+    white-space: pre !important;
+    margin: 0 !important;
+  }
+
+  @page {
+    margin: 5mm;
+    size: auto;
+  }
+}
