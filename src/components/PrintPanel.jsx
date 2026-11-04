@@ -12,6 +12,7 @@ export default function PrintPanel({
   config,
   onPrint,
   onBrowserPrint,
+  selectPrinter,
   testType: propTestType,
   setTestType: propSetTestType,
   receiptData: propReceiptData,
@@ -27,6 +28,7 @@ export default function PrintPanel({
   const setReceiptData = propSetReceiptData || setLocalReceiptData;
 
   const isDisconnected = connectionStatus !== CONNECTION_STATUS.CONNECTED;
+  const canDirectPrint = isConnected || (config.autoRelease && !!config.ipAddress);
 
   const handleDirectPrint = async () => {
     if (printLockRef.current || isPrinting) return;
@@ -60,6 +62,38 @@ export default function PrintPanel({
         <p className="text-gray-400 text-sm mt-0.5">
           Run normal system print tests or direct thermal print to Epson TM-m30III
         </p>
+      </div>
+
+      {/* Target Printer Selector (Up to 5 Printers) */}
+      <div className="bg-navy-800 p-3 rounded-2xl border border-navy-600 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <svg className="w-4 h-4 text-tms-green flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/>
+          </svg>
+          <span className="text-xs text-gray-300 font-semibold">Target Printer:</span>
+          <select
+            value={config.activePrinterId || '1'}
+            onChange={(e) => selectPrinter && selectPrinter(e.target.value)}
+            className="bg-navy-900 border border-navy-600 text-white text-xs font-semibold rounded-lg px-3 py-1.5 focus:border-tms-green outline-none"
+          >
+            {(config.printers || []).map((p) => (
+              <option key={p.id} value={p.id}>
+                #{p.id}: {p.name || `Printer ${p.id}`} {p.ipAddress ? `(${p.ipAddress})` : '(No IP)'}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {config.autoRelease ? (
+          <span className="text-[11px] text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2.5 py-1 rounded-full flex items-center gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            5-Device Shared Queue Active
+          </span>
+        ) : (
+          <span className="text-[11px] text-gray-400 bg-navy-900 border border-navy-700 px-2 py-0.5 rounded-full">
+            Persistent Mode
+          </span>
+        )}
       </div>
 
       {/* Test Type Selector */}
@@ -104,9 +138,9 @@ export default function PrintPanel({
             Choose Print Method for: <strong className="text-white">{testType === 'normal' ? 'Normal Test Slip' : 'Delivery Receipt'}</strong>
           </span>
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-            isConnected ? 'bg-tms-green/20 text-tms-green' : 'bg-gray-700 text-gray-400'
+            isConnected ? 'bg-tms-green/20 text-tms-green' : config.autoRelease ? 'bg-cyan-500/20 text-cyan-300' : 'bg-gray-700 text-gray-400'
           }`}>
-            {isConnected ? '● ePOS Connected' : '○ ePOS Offline'}
+            {isConnected ? '● ePOS Connected' : config.autoRelease ? '● Ready (Auto-Connect)' : '○ ePOS Offline'}
           </span>
         </div>
 
@@ -138,11 +172,11 @@ export default function PrintPanel({
             id="btn-direct-epos-print"
             type="button"
             onClick={handleDirectPrint}
-            disabled={isDisconnected || isPrinting}
+            disabled={!canDirectPrint || isPrinting}
             className={`
               flex flex-col items-center justify-center gap-2.5 p-5 rounded-2xl font-bold text-base transition-all duration-200
               select-none shadow-lg
-              ${isDisconnected || isPrinting
+              ${!canDirectPrint || isPrinting
                 ? 'bg-navy-900/40 text-gray-500 border border-navy-700 cursor-not-allowed opacity-60'
                 : 'bg-tms-green text-navy-900 hover:bg-tms-green-light shadow-glow-green active:scale-98'}
             `}
@@ -157,32 +191,34 @@ export default function PrintPanel({
             ) : (
               <>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  isDisconnected ? 'bg-gray-800 text-gray-500' : 'bg-navy-900/20 text-navy-900'
+                  !canDirectPrint ? 'bg-gray-800 text-gray-500' : 'bg-navy-900/20 text-navy-900'
                 }`}>
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                    <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.66-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
                   </svg>
                 </div>
                 <div className="text-center">
                   <span className="block font-bold text-base">DIRECT EPOS PRINT</span>
-                  <span className="text-xs opacity-75">Thermal Network to Epson TM-m30III</span>
+                  <span className="text-xs opacity-75">
+                    {config.autoRelease ? 'Auto-Connect & Release (5 Devices)' : 'Direct to Epson TM-m30III'}
+                  </span>
                 </div>
                 <span className={`text-[11px] px-2 py-0.5 rounded-full ${
-                  isDisconnected ? 'bg-gray-800 text-gray-500' : 'bg-navy-900/10 text-navy-900 font-semibold'
+                  !canDirectPrint ? 'bg-gray-800 text-gray-500' : 'bg-navy-900/10 text-navy-900 font-semibold'
                 }`}>
-                  {isDisconnected ? 'Requires ePOS Connection' : 'Direct Socket Ready'}
+                  {config.autoRelease ? '⚡ 1-Click Multi-Tablet Print' : 'Direct Socket Ready'}
                 </span>
               </>
             )}
           </button>
         </div>
 
-        {/* Informational warning if ePOS disconnected */}
-        {isDisconnected && (
+        {/* Informational warning if IP missing */}
+        {!config.ipAddress && (
           <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-3 flex items-start gap-2.5 text-xs text-yellow-300/80">
             <span className="text-yellow-400 text-base leading-none">ℹ</span>
             <p>
-              Direct ePOS printing is currently disconnected. You can immediately use <strong>Normal Print Test</strong> to test via your browser/OS print service, or connect your printer IP in the <strong>Configuration</strong> tab.
+              No printer IP is set for this slot. Please enter the printer IP in the <strong>Configuration</strong> tab, or use <strong>Normal Print Test</strong> to print via the browser.
             </p>
           </div>
         )}
@@ -257,37 +293,6 @@ export default function PrintPanel({
         testType={testType}
         onBrowserPrint={handleNormalPrint}
       />
-
-      {/* Explanation Card */}
-      <div className="card">
-        <h3 className="text-gray-300 font-semibold text-sm mb-3">Understanding the Two Print Methods</h3>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-              A
-            </div>
-            <div>
-              <p className="text-white text-xs font-semibold">Normal Print Test (Browser / System Print)</p>
-              <p className="text-gray-400 text-xs mt-0.5">
-                Invokes the operating system print dialog (<code className="text-cyan-300 font-mono">window.print()</code>) with dedicated print stylesheet.
-                Works with any printer configured on Windows, Android, ChromeOS, or macOS (including USB, Bluetooth, network, and Save as PDF), without requiring Epson ePOS SDK network connection.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-tms-green/20 text-tms-green rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
-              B
-            </div>
-            <div>
-              <p className="text-white text-xs font-semibold">Direct ePOS Print (Epson TM-m30III)</p>
-              <p className="text-gray-400 text-xs mt-0.5">
-                Communicates directly over TCP/HTTPS with the Epson printer hardware using the official ePOS SDK. Sends binary ESC/POS commands directly to the thermal print head and auto-cutter.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

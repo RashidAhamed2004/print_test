@@ -46,6 +46,7 @@ export default function App() {
     config,
     updateConfig,
     persistConfig,
+    selectPrinter,
     connectionStatus,
     printStatus,
     isConnected,
@@ -129,6 +130,7 @@ export default function App() {
               config={config}
               onPrint={print}
               onBrowserPrint={handleBrowserPrint}
+              selectPrinter={selectPrinter}
               testType={testType}
               setTestType={setTestType}
               receiptData={receiptData}
@@ -144,6 +146,7 @@ export default function App() {
               onConnect={handleConnect}
               onDisconnect={disconnect}
               onTest={testConnection}
+              selectPrinter={selectPrinter}
               connectionStatus={connectionStatus}
               isConnecting={isConnecting}
             />

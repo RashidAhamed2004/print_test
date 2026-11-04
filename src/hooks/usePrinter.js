@@ -60,6 +60,29 @@ export function usePrinter() {
     return true;
   }, [config, addLog]);
 
+  // Switch between any of the 5 printer slots
+  const selectPrinter = useCallback((printerId) => {
+    setConfig((prev) => {
+      const target = (prev.printers || []).find((p) => p.id === printerId);
+      if (!target) return prev;
+      if (printerService.isConnected()) {
+        printerService.disconnect();
+        setConnectionStatus(CONNECTION_STATUS.DISCONNECTED);
+      }
+      const next = {
+        ...prev,
+        activePrinterId: printerId,
+        ipAddress: target.ipAddress,
+        port: target.port || '8043',
+        protocol: target.protocol || 'https',
+        deviceId: target.deviceId || 'local_printer',
+      };
+      saveConfig(next);
+      return next;
+    });
+    addLog({ type: 'info', message: `Active printer switched to Slot ${printerId}.`, timestamp: new Date().toISOString() });
+  }, [addLog]);
+
   const connect = useCallback(async () => {
     setConnectionStatus(CONNECTION_STATUS.CONNECTING);
     addLog({ type: 'info', message: `Initiating connection to ${config.protocol}://${config.ipAddress}:${config.port}`, timestamp: new Date().toISOString() });
@@ -93,17 +116,56 @@ export function usePrinter() {
     return result;
   }, [addLog]);
 
+  // Robust print handling with Auto-Connect and Multi-Device Auto-Release
   const print = useCallback(async (buildFn) => {
     if (printStatus === PRINT_STATUS.PRINTING) return { success: false, message: 'Already printing.' };
     setPrintStatus(PRINT_STATUS.PRINTING);
     setLastPrintResult(null);
 
+    // Multi-device handling: Auto-connect if not currently connected
+    let autoConnected = false;
+    if (!printerService.isConnected()) {
+      if (!config.ipAddress) {
+        setPrintStatus(PRINT_STATUS.ERROR);
+        const errResult = { success: false, message: 'Printer IP is not configured.' };
+        setLastPrintResult(errResult);
+        return errResult;
+      }
+
+      addLog({ type: 'info', message: `Auto-connecting to ${config.ipAddress}:${config.port} for print...`, timestamp: new Date().toISOString() });
+      let conn = await printerService.connect(config);
+
+      // Retry once if busy (e.g. another tablet was finishing a print)
+      if (!conn.success) {
+        addLog({ type: 'warning', message: 'Printer busy or waiting. Retrying in 1s...', timestamp: new Date().toISOString() });
+        await new Promise((r) => setTimeout(r, 1000));
+        conn = await printerService.connect(config);
+      }
+
+      if (!conn.success) {
+        setPrintStatus(PRINT_STATUS.ERROR);
+        const errResult = { success: false, message: `Auto-connect failed: ${conn.message}` };
+        setLastPrintResult(errResult);
+        return errResult;
+      }
+      setConnectionStatus(CONNECTION_STATUS.CONNECTED);
+      autoConnected = true;
+    }
+
     const result = await printerService.print(buildFn);
+
+    // If autoRelease is enabled (recommended for multiple devices sharing 1 printer):
+    // Disconnect socket immediately so other tablets/phones can print without waiting
+    if (config.autoRelease || autoConnected) {
+      printerService.disconnect();
+      setConnectionStatus(CONNECTION_STATUS.IDLE);
+      addLog({ type: 'info', message: '✓ Connection released — ready for next device/tablet.', timestamp: new Date().toISOString() });
+    }
 
     setPrintStatus(result.success ? PRINT_STATUS.SUCCESS : PRINT_STATUS.ERROR);
     setLastPrintResult(result);
     return result;
-  }, [printStatus]);
+  }, [printStatus, config, addLog]);
 
   const clearLogs = useCallback(() => setLogs([]), []);
 
@@ -115,6 +177,7 @@ export function usePrinter() {
     config,
     updateConfig,
     persistConfig,
+    selectPrinter,
     connectionStatus,
     printStatus,
     isConnected,
