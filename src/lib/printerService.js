@@ -342,7 +342,7 @@ class PrinterService {
         };
 
         this._emit('info', 'Sending print job to printer...');
-        printer.sendData();
+        printer.send();
       } catch (err) {
         this._isPrinting = false;
         const msg = `Exception during print: ${err.message}`;
@@ -421,7 +421,7 @@ class PrinterService {
           });
         };
 
-        printer.sendData();
+        printer.send();
       } catch (err) {
         resolve({ success: false, message: `Test failed: ${err.message}` });
       }
